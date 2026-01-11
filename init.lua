@@ -20,7 +20,13 @@ vim.keymap.set("n",  "<leader>cop", ":CodeCompanionChat Toggle<CR>", { noremap =
 -- Code Runner
 local RunCodeWrapper = function() return RunCode() end -- Wrapper since RunCode is defined at the end
 vim.keymap.set("n", "<leader>run", RunCodeWrapper, { noremap = true })
-
+-- LSP Keymaps
+vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
+-- Other Keymaps
+-- Ctrl + Backspace to delete word
+vim.keymap.set('i', '<C-H>', '<C-w>', { noremap = true, silent = true })
+-- LSP hints (Requires 0.10+)
+vim.lsp.inlay_hint.enable(true, { 0 })
 
 -- Vim Specific Settings
 vim.opt.number = true
@@ -31,16 +37,16 @@ vim.opt.clipboard = "unnamedplus"
 -- folding
 vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
-vim.opt.foldenable = false
+vim.opt.foldlevel = 99
 
 -- Setup Powershell (Copied for stackoverflow, I have no idea how this works)
 local isWin = vim.loop.os_uname().sysname:find 'Windows' and true or false
 if isWin then
-    if vim.fn.executable("pwsh") == 1 then
-        vim.opt.shell = "pwsh" --"pwsh" for 7.x if installed
-    else
-        vim.opt.shell = "powershell" --"powershell" for 5.x
-    end
+	if vim.fn.executable("pwsh") == 1 then
+		vim.opt.shell = "pwsh.exe" --"pwsh" for 7.x if installed
+	else
+		vim.opt.shell = "powershell" --"powershell" for 5.x
+	end
 	vim.o.shellxquote = ''
 	vim.o.shellcmdflag = '-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command '
 	vim.o.shellquote = ''
@@ -50,11 +56,11 @@ end
 
 -- Highlight on Yank
 vim.api.nvim_create_autocmd('TextYankPost', {
-  desc = 'Highlight when yanking (copying) text',
-  group = vim.api.nvim_create_augroup('highlight on yank', { clear = true }),
-  callback = function()
-    vim.hl.on_yank()
-  end,
+	desc = 'Highlight when yanking (copying) text',
+	group = vim.api.nvim_create_augroup('highlight on yank', { clear = true }),
+	callback = function()
+		vim.hl.on_yank()
+	end,
 })
 
 -- Plugin Manager
@@ -68,28 +74,71 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup({
 	spec = {
 		{ "MeanderingProgrammer/render-markdown.nvim" },
-		{ "nvim-treesitter/nvim-treesitter", build = ":TSUpdate"},
+		{ "nvim-treesitter/nvim-treesitter", lazy = false, build = ":TSUpdate", version = "0.10.0" },
 		{ "neovim/nvim-lspconfig" },
-		{ 'mrcjkb/rustaceanvim', version = '^6', lazy = false },
-		{ "hrsh7th/nvim-cmp", dependencies = { "hrsh7th/cmp-nvim-lsp", "hrsh7th/cmp-path", "saadparwaiz1/cmp_luasnip" } },
-		{ "nvim-telescope/telescope.nvim", dependencies = { "nvim-lua/plenary.nvim" } },
+		{ "mrcjkb/rustaceanvim", version = "^6", lazy = false },
+		{
+			"hrsh7th/nvim-cmp",
+			dependencies = {
+				"hrsh7th/cmp-nvim-lsp",
+				"hrsh7th/cmp-path",
+				"saadparwaiz1/cmp_luasnip",
+			},
+		},
+		{
+			"nvim-telescope/telescope.nvim",
+			dependencies = { "nvim-lua/plenary.nvim" }
+		},
 		{ "nvim-tree/nvim-tree.lua" }, -- optional file explorer
-		{ "tpope/vim-surround" },  -- cs<what><to-what>
-		{ "windwp/nvim-autopairs", event = "InsertEnter", config = true }, -- this auto closes stuff
-		{ "tpope/vim-commentary" }, -- select then gc to comment visual mode selectgion 
+		{ "tpope/vim-surround" }, -- cs<what><to-what>
+		{
+			"windwp/nvim-autopairs",
+			event = "InsertEnter",
+			config = true,
+		}, -- this auto closes stuff
+		{ "tpope/vim-commentary" }, -- select then gc to comment visual mode selectgion
 		{ "voldikss/vim-floaterm" },
 		{ "github/copilot.vim" },
 		{ "sameert89/dotenv.nvim" },
 		{ "olimorris/codecompanion.nvim", version = "v17.33.0" },
 		{ "mason-org/mason.nvim", opts = {} },
-		{ "mason-org/mason-lspconfig.nvim", opts = {}, dependencies = {{ "mason-org/mason.nvim" }, { "neovim/nvim-lspconfig" }},
-		{ "L3MON4D3/LuaSnip", version = "v2.*", build = "make install_jsregexp"}},
+		{
+			"mason-org/mason-lspconfig.nvim",
+			opts = {},
+			dependencies = {
+				{ "mason-org/mason.nvim" },
+				{ "neovim/nvim-lspconfig" },
+			},
+		},
+		{ "L3MON4D3/LuaSnip", version = "v2.*", build = "make install_jsregexp" },
+		-- This shows keybinds
+		{
+			"folke/which-key.nvim",
+			event = "VeryLazy",
+		},
+		-- Saves sessions
+		{
+			"gennaro-tedesco/nvim-possession",
+			dependencies = {
+				"ibhagwan/fzf-lua",
+			},
+			config = true,
+			keys = {
+				{ "<leader>sl", function() require("nvim-possession").list() end, desc = "📌list sessions", },
+				{ "<leader>sn", function() require("nvim-possession").new() end, desc = "📌create new session", },
+				{ "<leader>su", function() require("nvim-possession").update() end, desc = "📌update current session", },
+				{ "<leader>sd", function() require("nvim-possession").delete() end, desc = "📌delete selected session"},
+			},
+		},
 		-- themes and customizations
 		{ "catppuccin/nvim", name = "catppuccin", priority = 1001 },
-		{ 'nvim-lualine/lualine.nvim', dependencies = { 'nvim-tree/nvim-web-devicons' } }
+		{
+			"nvim-lualine/lualine.nvim",
+			dependencies = { "nvim-tree/nvim-web-devicons" },
+		},
 	},
 	install = { colorscheme = { "habamax" } },
-	checker = { enabled = false }
+	checker = { enabled = false },
 })
 
 -- Plugin Specific Setup
@@ -97,55 +146,71 @@ require("lazy").setup({
 -- Color Scheme
 require("catppuccin").setup({
 	auto_integrations = true,
-	flavour = "macchiato"
+	flavour = "macchiato",
+	transparent_background = true,
+	custom_highlights = {
+		NormalFloat = { bg = "none" },
+		TelescopeBorder = { bg = "none" }
+	}
 })
 vim.cmd.colorscheme("catppuccin")
+
+-- Transparent Background
+vim.cmd [[
+  highlight Normal guibg=none
+  highlight NonText guibg=none
+  highlight Normal ctermbg=none
+  highlight NonText ctermbg=none
+]]
+
+-- Suppress Intro Message
+vim.cmd("set shortmess+=I")  
 
 -- Completion
 local cmp = require("cmp")
 local luasnip = require("luasnip")
 
 cmp.setup({
-  mapping = {
-    ["<Tab>"] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif luasnip.expand_or_jumpable() then
-        luasnip.expand_or_jump()
-      else
-        fallback()
-      end
-    end, { "i", "s" }),
+	mapping = {
+		["<Tab>"] = cmp.mapping(function(fallback)
+			if cmp.visible() then
+				cmp.select_next_item()
+			elseif luasnip.expand_or_jumpable() then
+				luasnip.expand_or_jump()
+			else
+				fallback()
+			end
+		end, { "i", "s" }),
 
-    ["<S-Tab>"] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif luasnip.jumpable(-1) then
-        luasnip.jump(-1)
-      else
-        fallback()
-      end
-    end, { "i", "s" }),
+		["<S-Tab>"] = cmp.mapping(function(fallback)
+			if cmp.visible() then
+				cmp.select_prev_item()
+			elseif luasnip.jumpable(-1) then
+				luasnip.jump(-1)
+			else
+				fallback()
+			end
+		end, { "i", "s" }),
 
-    ["<CR>"] = cmp.mapping.confirm({ select = true }),
-  },
+		["<CR>"] = cmp.mapping.confirm({ select = true }),
+	},
 
-  snippet = {
-    expand = function(args)
-      luasnip.lsp_expand(args.body)
-    end,
-  },
+	snippet = {
+		expand = function(args)
+			luasnip.lsp_expand(args.body)
+		end,
+	},
 
-  sources = cmp.config.sources({
-    { name = "nvim_lsp" },
-    { name = "path" },
-    { name = "luasnip" },
-  }),
+	sources = cmp.config.sources({
+		{ name = "nvim_lsp" },
+		{ name = "path" },
+		{ name = "luasnip" },
+	}),
 })
 
 -- Custom LuaSnip Snippets
 require("luasnip.loaders.from_lua").lazy_load({
-  paths = "~/AppData/Local/nvim/snippets/"
+	paths = "~/AppData/Local/nvim/snippets/"
 })
 
 -- File Tree
@@ -205,7 +270,7 @@ require("codecompanion").setup({
 			tavily = function()
 				return require("codecompanion.adapters").extend("tavily", {
 					env = {
-						api_key = dotenv.get("TAVILY_API_KEY"),
+						api_key = dotenv.get("TAVILY_API_KEY")
 					},
 				})
 			end,
@@ -235,6 +300,7 @@ require("codecompanion").setup({
 		cmd = {
 			adapter = "openrouter_grok"
 		}
+
 	},
 	display = {
 		chat = {
@@ -273,7 +339,15 @@ require('lualine').setup {
 	sections = {
 		lualine_a = { 'mode' },
 		lualine_b = { 'branch', 'diff', 'diagnostics' },
-		lualine_c = { 'filename' },
+		lualine_c = { 
+			{ 'filename' },
+			{
+				require("nvim-possession").status,
+				cond = function()
+					return require("nvim-possession").status() ~= nil
+				end,
+			}
+		},
 		lualine_x = { 'encoding', 'fileformat', 'filetype' },
 		lualine_y = { 'progress' },
 		lualine_z = { 'location' },
@@ -281,7 +355,15 @@ require('lualine').setup {
 	inactive_sections = {
 		lualine_a = {},
 		lualine_b = {},
-		lualine_c = { 'filename' },
+		lualine_c = { 
+			{ 'filename' },
+			{
+				require("nvim-possession").status,
+				cond = function()
+					return require("nvim-possession").status() ~= nil
+				end,
+			}
+		},
 		lualine_x = { 'location' },
 		lualine_y = {},
 		lualine_z = {},
@@ -290,7 +372,7 @@ require('lualine').setup {
 
 -- Render Markdown
 require('render-markdown').setup({
-	ft = { "markdown", "codecompanion" },
+	file_types = { "markdown", "codecompanion" },
 	opts = {
 		render_modes = true, -- Render in ALL modes
 		sign = {
@@ -298,6 +380,12 @@ require('render-markdown').setup({
 		},
 	},
 	completions = { lsp = { enabled = true } },
+})
+
+-- Possession 
+require("nvim-possession").setup({
+    autoload = true,
+	autosave = false
 })
 
 -- CUSTOM FUNCTIONS --
