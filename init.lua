@@ -147,7 +147,7 @@ require("lazy").setup({
 require("catppuccin").setup({
 	auto_integrations = true,
 	flavour = "macchiato",
-	transparent_background = true,
+	transparent_background = false,
 	custom_highlights = {
 		NormalFloat = { bg = "none" },
 		TelescopeBorder = { bg = "none" }
@@ -156,12 +156,12 @@ require("catppuccin").setup({
 vim.cmd.colorscheme("catppuccin")
 
 -- Transparent Background
-vim.cmd [[
-  highlight Normal guibg=none
-  highlight NonText guibg=none
-  highlight Normal ctermbg=none
-  highlight NonText ctermbg=none
-]]
+-- vim.cmd [[
+--   highlight Normal guibg=none
+--   highlight NonText guibg=none
+--   highlight Normal ctermbg=none
+--   highlight NonText ctermbg=none
+-- ]]
 
 -- Suppress Intro Message
 vim.cmd("set shortmess+=I")  
@@ -210,7 +210,7 @@ cmp.setup({
 
 -- Custom LuaSnip Snippets
 require("luasnip.loaders.from_lua").lazy_load({
-	paths = "~/AppData/Local/nvim/snippets/"
+	paths = "~/.config/nvim/snippets/"
 })
 
 -- File Tree
