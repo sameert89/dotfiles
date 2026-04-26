@@ -2,6 +2,11 @@ local ls = require("luasnip")
 local s = ls.snippet
 local t = ls.text_node
 local i = ls.insert_node
+local f = ls.function_node
+
+local function get_filename()
+	return vim.fn.expand("%:t:r")
+end
 
 return {
 	s("cp", {
@@ -461,4 +466,65 @@ return {
 			"}",
 		}),
 	}),
+	s("skel", {
+		f(function()
+			return string.format("#include \"%s.h\";",get_filename())
+		end
+		),
+		t({
+			"",
+			""
+		}),
+		f(function()
+			return string.format("namespace %s {",get_filename())
+		end
+		),
+		t({
+			"",
+			"    "
+		}),
+		i(0),
+		t({
+			"",
+			"}"
+		})
+	}),
+	s("skelh", {
+		t({
+			"#pragma once",
+			"",
+			""
+		}),
+		f(function()
+			return string.format("namespace %s {",get_filename())
+		end
+		),
+		t({
+			"",
+			""
+		}),
+		f(function()
+			return string.format("class %s {", get_filename())
+		end
+		),
+		t({
+			"",
+			""
+		}),
+		i(0),
+		t({
+			"",
+			""
+		}),
+		t({
+			"};"
+		}),
+		t({
+			"",
+			""
+		}),
+		t({
+			"}"
+		})
+	})
 }

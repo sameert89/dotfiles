@@ -4,29 +4,78 @@ vim.g.maplocalleader = "\\"
 
 -- Key Maps
 -- Telescope
-vim.keymap.set("n", "<leader>tf", ":NvimTreeToggle<CR>", { noremap = true })
-vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>", { noremap = true })
-vim.keymap.set("n", "<leader>lg", ":Telescope live_grep<CR>", { noremap = true })
-vim.keymap.set("n", "<leader>fb", ":Telescope buffers<CR>", { noremap = true })
+local map = vim.keymap.set;
+map("n", "<leader>tf", ":NvimTreeToggle<CR>", { noremap = true })
+map("n", "<leader>ff", ":Telescope find_files<CR>", { noremap = true })
+map("n", "<leader>lg", ":Telescope live_grep<CR>", { noremap = true })
+map("n", "<leader>fb", ":Telescope buffers<CR>", { noremap = true })
 -- Diagnostics
-vim.keymap.set("n", "gl", vim.diagnostic.open_float, { desc = "Show diagnostic" })
-vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Diagnostics list" })
+map("n", "gl", vim.diagnostic.open_float, { desc = "Show diagnostic" })
+map("n", "<leader>d", vim.diagnostic.setloclist, { desc = "Diagnostics list" })
 -- Terminal Mode Escape
-vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { noremap = true })
+map("t", "<Esc>", [[<C-\><C-n>]], { noremap = true })
 -- FloatTerm
-vim.keymap.set("n", "<leader>tt", ":FloatermToggle<CR>", { noremap = true })
+map("n", "<leader>tt", ":FloatermToggle<CR>", { noremap = true })
 -- Copilot Chat
-vim.keymap.set("n",  "<leader>cop", ":CodeCompanionChat Toggle<CR>", { noremap = true })
+map("n",  "<leader>cop", ":CodeCompanionChat Toggle<CR>", { noremap = true })
 -- Code Runner
 local RunCodeWrapper = function() return RunCode() end -- Wrapper since RunCode is defined at the end
-vim.keymap.set("n", "<leader>run", RunCodeWrapper, { noremap = true })
+map("n", "<leader>run", RunCodeWrapper, { noremap = true })
 -- LSP Keymaps
-vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
+map("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
 -- Other Keymaps
--- Ctrl + Backspace to delete word
-vim.keymap.set('i', '<C-H>', '<C-w>', { noremap = true, silent = true })
+-- Ctrl + Backspace to delete word (Only works on PowerShell)
+map('i', '<C-H>', '<C-w>', { noremap = true, silent = true })
+-- Reload vim config
+map('n', '<leader>sv', ':source $MYVIMRC<CR>')
+-- Splits
+-- Movement
+map("n", "<C-h>", "<C-w>h", { desc = "Move to left split" })
+map("n", "<C-j>", "<C-w>j", { desc = "Move to lower split" })
+map("n", "<C-k>", "<C-w>k", { desc = "Move to upper split" })
+map("n", "<C-l>", "<C-w>l", { desc = "Move to right split" })
+-- Closing
+map("n", "<C-q>", "<cmd>close<CR>", { desc = "Close split" })
+
+-- Buffer Navigation
+map("n", "<S-l>", "<cmd>bnext<CR>", { desc = "Next buffer" })
+map("n", "<S-h>", "<cmd>bprevious<CR>", { desc = "Previous buffer" })
+
+-- Creating Files
+map("n", "<leader>nf", function()
+	local current_dir = vim.fn.expand("%:p:h")
+	local name = vim.fn.input("New file: ", current_dir .. "/", "file")
+
+	if name == "" then
+		return
+	end
+
+	local dir = vim.fn.fnamemodify(name, ":p:h")
+	vim.fn.mkdir(dir, "p")
+	vim.cmd.edit(vim.fn.fnameescape(name))
+end, { desc = "New file in the Same location as current file" })
+
+-- Mixed move/rename
+map("n", "<leader>rn", function()
+	local old_name = vim.fn.expand("%:p")
+	local new_name = vim.fn.input("Rename to: ", old_name, "file")
+
+	if new_name == "" or new_name == old_name then
+		return
+	end
+
+	local new_dir = vim.fn.fnamemodify(new_name, ":p:h")
+	vim.fn.mkdir(new_dir, "p")
+
+	vim.cmd.saveas(vim.fn.fnameescape(new_name))
+	vim.fn.delete(old_name)
+end, { desc = "Rename current file" })
+
+
 -- LSP hints (Requires 0.10+)
 vim.lsp.inlay_hint.enable(true, { 0 })
+-- Create a New File
+
 
 -- Vim Specific Settings
 vim.opt.number = true
@@ -116,6 +165,18 @@ require("lazy").setup({
 			"folke/which-key.nvim",
 			event = "VeryLazy",
 		},
+		-- This fixes undefined global 'vim' in init.lua
+		{
+			"folke/lazydev.nvim",
+			ft = "lua", -- only load on lua files
+			opts = {
+				library = {
+					-- See the configuration section for more details
+					-- Load luvit types when the `vim.uv` word is found
+					{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
+				},
+			},
+		},
 		-- Saves sessions
 		{
 			"gennaro-tedesco/nvim-possession",
@@ -131,11 +192,16 @@ require("lazy").setup({
 			},
 		},
 		-- themes and customizations
-		{ "catppuccin/nvim", name = "catppuccin", priority = 1001 },
+		-- { "catppuccin/nvim", name = "catppuccin", priority = 1001 },
 		{
 			"nvim-lualine/lualine.nvim",
 			dependencies = { "nvim-tree/nvim-web-devicons" },
 		},
+		{
+			"oskarnurm/koda.nvim",
+			lazy = false, -- make sure we load this during startup if it is your main colorscheme
+			priority = 1000, -- make sure to load this before all the other start plugins
+		}
 	},
 	install = { colorscheme = { "habamax" } },
 	checker = { enabled = false },
@@ -144,16 +210,16 @@ require("lazy").setup({
 -- Plugin Specific Setup
 
 -- Color Scheme
-require("catppuccin").setup({
-	auto_integrations = true,
-	flavour = "macchiato",
-	transparent_background = false,
-	custom_highlights = {
-		NormalFloat = { bg = "none" },
-		TelescopeBorder = { bg = "none" }
-	}
-})
-vim.cmd.colorscheme("catppuccin")
+-- require("catppuccin").setup({
+-- 	auto_integrations = true,
+-- 	flavour = "mocha",
+-- 	transparent_background = false,
+-- 	custom_highlights = {
+-- 		NormalFloat = { bg = "none" },
+-- 		TelescopeBorder = { bg = "none" }
+-- 	}
+-- })
+vim.cmd.colorscheme("koda")
 
 -- Transparent Background
 -- vim.cmd [[
@@ -164,7 +230,7 @@ vim.cmd.colorscheme("catppuccin")
 -- ]]
 
 -- Suppress Intro Message
-vim.cmd("set shortmess+=I")  
+vim.cmd("set shortmess+=I")
 
 -- Completion
 local cmp = require("cmp")
@@ -217,6 +283,7 @@ require("luasnip.loaders.from_lua").lazy_load({
 require("nvim-tree").setup()
 
 -- Telescope
+local actions = require("telescope.actions")
 require("telescope").setup({
 	defaults = {
 		file_ignore_patterns = {
@@ -232,7 +299,19 @@ require("telescope").setup({
 			".svelte-kit",
 			".obsidian"
 		},
-	},
+		mappings = {
+			i = {
+				["<A-v>"] = actions.select_vertical,
+				["<A-s>"] = actions.select_horizontal,
+				["<A-t>"] = actions.select_tab,
+			},
+			n = {
+				["v"] = actions.select_vertical,
+				["s"] = actions.select_horizontal,
+				["t"] = actions.select_tab,
+			},
+		},
+	}
 })
 
 -- Treesitter syntax highlight
@@ -274,6 +353,18 @@ require("codecompanion").setup({
 					},
 				})
 			end,
+			openai_gpt54mini = function()
+				return require("codecompanion.adapters").extend("openai"), {
+					env = {
+						api_key = dotenv.get("OPENAI_API_KEY")
+					},
+					schema = {
+						model = {
+							default = "gpt-5.4mini"
+						}
+					}
+				}
+			end,
 			openrouter_grok = function()
 				return require("codecompanion.adapters").extend("openai_compatible", {
 					env = {
@@ -292,19 +383,22 @@ require("codecompanion").setup({
 	},
 	strategies = {
 		chat = {
-			adapter = "openrouter_grok"
+			-- adapter = "openrouter_grok"
+			adapter = "openai_gpt54mini"
 		},
 		inline = {
-			adapter = "openrouter_grok"
+			-- adapter = "openrouter_grok"
+			adapter = "openai_gpt54mini"
 		},
 		cmd = {
-			adapter = "openrouter_grok"
+			-- adapter = "openrouter_grok"
+			adapter = "openai_gpt54mini"
 		}
 
 	},
 	display = {
 		chat = {
-			intro_message = "Hello! How can I help spice things up? 😉",
+			intro_message = "Hey! how can I help?",
 			window = {
 				layout = "vertical",
 				height = 0.8,
@@ -332,14 +426,14 @@ require("mason-lspconfig").setup({
 -- Lualine
 require('lualine').setup {
 	options = {
-		theme = "catppuccin",
+		theme = "auto",
 		component_separators = { left = '', right = '' },
 		section_separators = { left = '', right = '' },
 	},
 	sections = {
 		lualine_a = { 'mode' },
 		lualine_b = { 'branch', 'diff', 'diagnostics' },
-		lualine_c = { 
+		lualine_c = {
 			{ 'filename' },
 			{
 				require("nvim-possession").status,
@@ -355,7 +449,7 @@ require('lualine').setup {
 	inactive_sections = {
 		lualine_a = {},
 		lualine_b = {},
-		lualine_c = { 
+		lualine_c = {
 			{ 'filename' },
 			{
 				require("nvim-possession").status,
@@ -384,7 +478,7 @@ require('render-markdown').setup({
 
 -- Possession 
 require("nvim-possession").setup({
-    autoload = true,
+	autoload = true,
 	autosave = false
 })
 
@@ -398,7 +492,7 @@ RunCode = function()
 	local fileType = vim.fn.fnamemodify(filePath, ":e")
 	local command = ""
 	if fileType == "cpp" then
-		command = string.format('g++ "%s"; .\\a.exe', filePath)
+		command = string.format('g++ "%s" -std=c++20; .\\a.exe', filePath)
 	elseif fileType == "py" then
 		command = string.format('python "%s"', filePath)
 	elseif fileType == "rs" then
