@@ -71,6 +71,12 @@ map("n", "<leader>rn", function()
 	vim.fn.delete(old_name)
 end, { desc = "Rename current file" })
 
+-- Remap Macro recording so I don't fat-finger it
+vim.keymap.set("n", "q", "<Nop>", { desc = "Disabled macro recording" })
+
+vim.keymap.set("n", "<leader>q", function()
+  vim.cmd.normal({ "q", bang = true })
+end, { desc = "Start/stop macro recording" })
 
 -- LSP hints (Requires 0.10+)
 vim.lsp.inlay_hint.enable(true, { 0 })
