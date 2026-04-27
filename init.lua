@@ -71,12 +71,18 @@ map("n", "<leader>rn", function()
 	vim.fn.delete(old_name)
 end, { desc = "Rename current file" })
 
--- Remap Macro recording so I don't fat-finger it
+-- Don't fat finger the macro button
 vim.keymap.set("n", "q", "<Nop>", { desc = "Disabled macro recording" })
+vim.keymap.set("n", "<leader>q", "q", {
+	remap = true,
+	desc = "Start/stop macro recording",
+})
 
-vim.keymap.set("n", "<leader>q", function()
-  vim.cmd.normal({ "q", bang = true })
-end, { desc = "Start/stop macro recording" })
+-- Doc generations
+vim.keymap.set("i", "///", function()
+  vim.cmd("Neogen")
+end, { desc = "Neogen doc generation" })
+
 
 -- LSP hints (Requires 0.10+)
 vim.lsp.inlay_hint.enable(true, { 0 })
@@ -95,18 +101,19 @@ vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
 vim.opt.foldlevel = 99
 
 -- Setup Powershell (Copied for stackoverflow, I have no idea how this works)
-local isWin = vim.loop.os_uname().sysname:find 'Windows' and true or false
+local isWin = vim.loop.os_uname().sysname:find("Windows") ~= nil
+
 if isWin then
-	if vim.fn.executable("pwsh") == 1 then
-		vim.opt.shell = "pwsh.exe" --"pwsh" for 7.x if installed
-	else
-		vim.opt.shell = "powershell" --"powershell" for 5.x
-	end
-	vim.o.shellxquote = ''
-	vim.o.shellcmdflag = '-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command '
-	vim.o.shellquote = ''
-	vim.o.shellpipe = '| Out-File -Encoding UTF8 %s'
-	vim.o.shellredir = '| Out-File -Encoding UTF8 %s`'
+	local shell = vim.fn.executable("pwsh") == 1 and "pwsh" or "powershell"
+
+	vim.opt.shell = shell
+	vim.opt.shellquote = ""
+	vim.opt.shellxquote = ""
+	vim.opt.shellcmdflag = "-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command"
+	vim.opt.shellpipe = "| Out-File -Encoding UTF8 %s"
+	vim.opt.shellredir = "| Out-File -Encoding UTF8 %s"
+
+	vim.g.floaterm_shell = shell .. " -NoLogo"
 end
 
 -- Highlight on Yank
@@ -196,6 +203,12 @@ require("lazy").setup({
 				{ "<leader>su", function() require("nvim-possession").update() end, desc = "📌update current session", },
 				{ "<leader>sd", function() require("nvim-possession").delete() end, desc = "📌delete selected session"},
 			},
+		},
+		-- Doc Generation
+		{
+			"danymat/neogen",
+			config = true,
+			version = "*" ,
 		},
 		-- themes and customizations
 		-- { "catppuccin/nvim", name = "catppuccin", priority = 1001 },
