@@ -79,6 +79,14 @@ vim.keymap.set("n", "<leader>q", "q", {
 })
 
 -- Doc generations
-vim.keymap.set("i", "///", function()
-	vim.cmd("Neogen")
-end, { desc = "Neogen doc generation" })
+vim.keymap.set("n", "<leader>docf", function()
+    require("neogen").generate({ type = "func" })
+end, { desc = "Generate function docs" })
+
+vim.keymap.set("n", "<leader>docc", function()
+    require("neogen").generate({ type = "class" })
+end, { desc = "Generate class docs" })
+
+vim.keymap.set("n", "<leader>docF", function()
+    require("neogen").generate({ type = "file" })
+end, { desc = "Generate file docs" })

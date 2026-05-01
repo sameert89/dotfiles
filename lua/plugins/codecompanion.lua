@@ -25,7 +25,7 @@ return {
 							},
 							schema = {
 								model = {
-									default = "gpt-5.4mini",
+									default = "gpt-5.4-mini",
 								},
 							},
 						})
